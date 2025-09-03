@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界患者安全日消消乐</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #FFD700; /* 黄色背景 */
+            font-family: 'Arial Rounded MT Bold', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            margin: 20px 0 30px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            color: #D32F2F;
+            text-shadow: 3px 3px 0 #FF9800, 6px 6px 0 rgba(0,0,0,0.2);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .score-container, .timer-container {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 10px;
+            min-width: 150px;
+        }
+        
+        .timer-container {
+            background: #2196F3;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .bubble {
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: black;
+            text-align: center;
+            padding: 5px;
+            user-select: none;
+            transition: all 0.3s ease;
+            /* 3D效果 */
+            box-shadow: 
+                inset 0 -8px 15px rgba(0,0,0,0.2),
+                inset 0 8px 15px rgba(255,255,255,0.7),
+                0 5px 10px rgba(0,0,0,0.2);
+            transform: translateZ(0);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bubble:before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 20%;
+            width: 20%;
+            height: 20%;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+        }
+        
+        .bubble.selected {
+            transform: scale(1.1);
+            box-shadow: 
+                inset 0 -5px 10px rgba(0,0,0,0.2),
+                inset 0 5px 10px rgba(255,255,255,0.7),
+                0 0 20px rgba(255,255,255,0.8);
+        }
+        
+        .bubble.matched {
+            animation: pop 0.5s forwards;
+        }
+        
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            background: #FF5722;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:hover {
+            background: #E64A19;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .game-over.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .result-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 90%;
+            width: 500px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+        
+        .result-box h2 {
+            font-size: 3rem;
+            color: #D32F2F;
+            margin-bottom: 20px;
+        }
+        
+        .final-score {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>世界患者安全日消消乐</h1>
+    </div>
+    
+    <div class="game-container">
+        <div class="game-info">
+            <div class="score-container">得分: <span id="score">0</span></div>
+            <div class="timer-container">剩余时间: <span id="timer">30</span>秒</div>
+        </div>
+        
+        <div class="game-board" id="gameBoard">
+            <!-- 泡泡将通过JS动态生成 -->
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">开始游戏</button>
+            <button id="resetBtn">重新开始</button>
+        </div>
+        
+        <div class="instructions">
+            <p>游戏规则: 点击两个相同颜色的泡泡，如果颜色相同则消除并得10分，否则泡泡会恢复原状。在30秒内获得尽可能多的分数！</p>
+        </div>
+    </div>
+    
+    <div class="game-over" id="gameOver">
+        <div class="result-box">
+            <h2>游戏结束</h2>
+            <p>您的最终得分:</p>
+            <div class="final-score" id="finalScore">0</div>
+            <button id="playAgainBtn">再玩一次</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameBoard = document.getElementById('gameBoard');
+            const scoreDisplay = document.getElementById('score');
+            const timerDisplay = document.getElementById('timer');
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const gameOverScreen = document.getElementById('gameOver');
+            const finalScoreDisplay = document.getElementById('finalScore');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            
+            let bubbles = [];
+            let selectedBubbles = [];
+            let score = 0;
+            let timeLeft = 30;
+            let timer;
+            let gameActive = false;
+            
+            // 生成随机颜色
+            function getRandomColor() {
+                const colors = [
+                    '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', 
+                    '#536DFE', '#448AFF', '#40C4FF', '#18FFFF',
+                    '#64FFDA', '#69F0AE', '#B2FF59', '#EEFF41'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            // 创建泡泡
+            function createBubbles() {
+                gameBoard.innerHTML = '';
+                // 创建36个泡泡（6x6网格）
+                for (let i = 0; i < 36; i++) {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'bubble';
+                    bubble.textContent = '患者安全';
+                    
+                    // 为泡泡分配随机颜色
+                    const color = getRandomColor();
+                    bubble.style.backgroundColor = color;
+                    
+                    // 存储颜色信息用于匹配
+                    bubble.dataset.color = color;
+                    
+                    bubble.addEventListener('click', () => handleBubbleClick(bubble));
+                    gameBoard.appendChild(bubble);
+                    bubbles.push(bubble);
+                }
+            }
+            
+            // 处理泡泡点击
+            function handleBubbleClick(bubble) {
+                if (!gameActive || bubble.classList.contains('matched')) return;
+                
+                // 如果已经选择了两个泡泡，则忽略点击
+                if (selectedBubbles.length >= 2) return;
+                
+                // 如果点击了同一个泡泡，则取消选择
+                if (selectedBubbles.includes(bubble)) {
+                    bubble.classList.remove('selected');
+                    selectedBubbles = selectedBubbles.filter(b => b !== bubble);
+                    return;
+                }
+                
+                bubble.classList.add('selected');
+                selectedBubbles.push(bubble);
+                
+                // 如果选择了两个泡泡，检查是否匹配
+                if (selectedBubbles.length === 2) {
+                    setTimeout(checkMatch, 300);
+                }
+            }
+            
+            // 检查两个泡泡是否匹配
+            function checkMatch() {
+                const [bubble1, bubble2] = selectedBubbles;
+                
+                if (bubble1.dataset.color === bubble2.dataset.color) {
+                    // 匹配成功
+                    bubble1.classList.add('matched');
+                    bubble2.classList.add('matched');
+                    score += 10;
+                    scoreDisplay.textContent = score;
+                    
+                    // 延迟移除泡泡
+                    setTimeout(() => {
+                        bubble1.style.visibility = 'hidden';
+                        bubble2.style.visibility = 'hidden';
+                    }, 500);
+                } else {
+                    // 匹配失败
+                    bubble1.classList.remove('selected');
+                    bubble2.classList.remove('selected');
+                }
+                
+                // 重置选择
+                selectedBubbles = [];
+            }
+            
+            // 开始游戏
+            function startGame() {
+                if (gameActive) return;
+                
+                gameActive = true;
+                score = 0;
+                timeLeft = 30;
+                scoreDisplay.textContent = score;
+                timerDisplay.textContent = timeLeft;
+                
+                // 重置所有泡泡
+                bubbles.forEach(bubble => {
+                    bubble.classList.remove('matched', 'selected');
+                    bubble.style.visibility = 'visible';
+                });
+                
+                // 开始计时
+                timer = setInterval(() => {
+                    timeLeft--;
+                    timerDisplay.textContent = timeLeft;
+                    
+                    if (timeLeft <= 0) {
+                        endGame();
+                    }
+                }, 1000);
+            }
+            
+            // 结束游戏
+            function endGame() {
+                gameActive = false;
+                clearInterval(timer);
+                finalScoreDisplay.textContent = score;
+                gameOverScreen.classList.add('active');
+            }
+            
+            // 重置游戏
+            function resetGame() {
+                gameActive = false;
+                clearInterval(timer);
+                score = 0;
+                timeLeft = 30;
+                scoreDisplay.textContent = score;
+                timerDisplay.textContent = timeLeft;
+                selectedBubbles = [];
+                createBubbles();
+                gameOverScreen.classList.remove('active');
+            }
+            
+            // 事件监听
+            startBtn.addEventListener('click', startGame);
+            resetBtn.addEventListener('click', resetGame);
+            playAgainBtn.addEventListener('click', resetGame);
+            
+            // 初始化游戏
+            createBubbles();
+        });
+    </script>
+</body>
+</html>
